@@ -1,11 +1,11 @@
 {
-  "name": "ベビーマップ Japan",
-  "short_name": "ベビーマップ",
-  "description": "多目的トイレ・おむつ替え施設を地図で検索",
+  "name": "ナッピーナビ",
+  "short_name": "ナピナビ",
+  "description": "おむつ替え・授乳室・バリアフリートイレを地図でナビ",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#1A6B4A",
+  "theme_color": "#4CAF7D",
   "lang": "ja",
   "orientation": "portrait-primary",
   "icons": [
@@ -21,6 +21,11 @@
     {
       "name": "授乳室を探す",
       "url": "./index.html?filter=nursing",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "バリアフリートイレ",
+      "url": "./index.html?filter=barrier",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
     }
   ]
