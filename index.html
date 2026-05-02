@@ -3,413 +3,741 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#1A6B4A">
+<meta name="theme-color" content="#4CAF7D">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ベビーマップ">
-<meta name="description" content="多目的トイレ・おむつ替え施設を地図で検索">
+<meta name="description" content="おむつ替え・授乳室・多目的トイレを地図で検索">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<title>ベビーマップ Japan</title>
+<title>🚼 ベビーマップ Japan</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --green:#1A6B4A;--green-l:#E1F5EE;--green-m:#0F6E56;
-  --blue:#185FA5;--blue-l:#E6F1FB;
-  --amber:#854F0B;--amber-l:#FAEEDA;
-  --red:#A32D2D;--red-l:#FCEBEB;
-  --text:#1a1a1a;--text2:#666;--bg:#fff;--bg2:#f6f6f4;
-  --border:rgba(0,0,0,0.12);--r:10px;
+  --mint:#4CAF7D;--mint-d:#2E8B57;--mint-l:#E8F8F0;--mint-ll:#F0FAF5;
+  --peach:#FF8A65;--peach-l:#FFF0EB;
+  --sky:#64B5F6;--sky-l:#E8F4FE;
+  --lav:#CE93D8;--lav-l:#F8EEff;
+  --sun:#FFD54F;--sun-l:#FFFDE7;
+  --rose:#F48FB1;--rose-l:#FEF0F5;
+  --text:#3D3D3D;--text2:#888;--bg:#FAFCFA;--bg2:#F2F7F4;
+  --card:#fff;--border:rgba(0,0,0,0.08);
+  --shadow:0 2px 12px rgba(76,175,125,0.12);
+  --r:16px;--rb:24px;
   --sat:env(safe-area-inset-top,0px);
   --sab:env(safe-area-inset-bottom,0px);
 }
-html,body{height:100%;overflow:hidden;font-family:'Hiragino Sans','Noto Sans JP','YuGothic',sans-serif;background:var(--bg);color:var(--text);}
+html,body{height:100%;overflow:hidden;
+  font-family:'Hiragino Maru Gothic Pro','Rounded Mplus 1c','Noto Sans JP','YuGothic',sans-serif;
+  background:var(--bg);color:var(--text);}
 #app{display:flex;flex-direction:column;height:100%;}
-#hdr{background:var(--green);color:#fff;padding:calc(10px + var(--sat)) 14px 9px;flex-shrink:0;}
-#hdr h1{font-size:16px;font-weight:700;letter-spacing:.03em;}
-#hdr p{font-size:10px;opacity:.75;margin-top:1px;}
-#srow{display:flex;gap:7px;padding:8px 11px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;}
-#sinput{flex:1;height:36px;padding:0 13px;border-radius:18px;border:1px solid var(--border);font-size:13px;background:var(--bg);color:var(--text);outline:none;}
-#sinput:focus{border-color:var(--green);box-shadow:0 0 0 2px rgba(26,107,74,.15);}
-#lbtn{width:36px;height:36px;border-radius:50%;background:var(--green);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-#lbtn svg{width:17px;height:17px;fill:#fff;}
-#frow{display:flex;gap:5px;padding:7px 11px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid var(--border);}
+
+/* ヘッダー */
+#hdr{
+  background:linear-gradient(135deg,#4CAF7D 0%,#66BB8A 100%);
+  color:#fff;padding:calc(12px + var(--sat)) 16px 12px;
+  flex-shrink:0;
+  box-shadow:0 2px 12px rgba(76,175,125,0.3);
+}
+#hdr-inner{display:flex;align-items:center;gap:10px;}
+#hdr-icon{font-size:28px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.15));}
+#hdr-text h1{font-size:17px;font-weight:700;letter-spacing:.02em;}
+#hdr-text p{font-size:10px;opacity:.85;margin-top:2px;}
+
+/* 検索バー */
+#srow{
+  padding:10px 12px;background:var(--bg2);
+  border-bottom:1px solid var(--border);flex-shrink:0;
+  display:flex;gap:8px;position:relative;z-index:500;
+}
+#swrap{flex:1;position:relative;}
+#sinput{
+  width:100%;height:40px;padding:0 38px 0 16px;
+  border-radius:20px;border:2px solid transparent;
+  font-size:13px;background:var(--card);color:var(--text);outline:none;
+  box-shadow:var(--shadow);transition:border-color .2s;
+}
+#sinput:focus{border-color:var(--mint);}
+#sinput::placeholder{color:#bbb;}
+#sclear{
+  display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;font-size:15px;color:#ccc;padding:4px;
+}
+#suggest{
+  display:none;position:absolute;top:46px;left:0;right:0;
+  background:var(--card);border:2px solid var(--mint-l);border-radius:var(--r);
+  z-index:9999;box-shadow:0 8px 24px rgba(76,175,125,0.2);overflow:hidden;
+}
+.sg{
+  padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+  -webkit-tap-highlight-color:transparent;
+}
+.sg:last-child{border-bottom:none;}
+.sg:active{background:var(--mint-ll);}
+.sg-ico{font-size:20px;width:26px;text-align:center;}
+.sg-name{font-size:12px;font-weight:700;color:var(--text);}
+.sg-addr{font-size:10px;color:var(--text2);margin-top:2px;}
+#lbtn{
+  width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(135deg,#4CAF7D,#66BB8A);
+  border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;box-shadow:0 2px 8px rgba(76,175,125,0.4);
+  -webkit-tap-highlight-color:transparent;
+}
+#lbtn svg{width:18px;height:18px;fill:#fff;}
+
+/* フィルターチップ */
+#frow{
+  display:flex;gap:6px;padding:8px 12px;overflow-x:auto;
+  flex-shrink:0;border-bottom:1px solid var(--border);background:var(--bg2);
+}
 #frow::-webkit-scrollbar{display:none;}
-.chip{flex-shrink:0;padding:4px 11px;border-radius:13px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--text2);white-space:nowrap;transition:all .15s;-webkit-tap-highlight-color:transparent;}
-.chip.active{background:var(--green);color:#fff;border-color:var(--green);}
+.chip{
+  flex-shrink:0;padding:6px 13px;border-radius:20px;font-size:11px;font-weight:600;
+  cursor:pointer;border:2px solid transparent;background:var(--card);
+  color:var(--text2);white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.08);
+  transition:all .15s;-webkit-tap-highlight-color:transparent;
+}
+.chip.active{background:var(--mint);color:#fff;border-color:var(--mint);box-shadow:0 2px 8px rgba(76,175,125,0.3);}
+.chip[data-f="diaper"].active{background:#FF8A65;border-color:#FF8A65;}
+.chip[data-f="nursing"].active{background:#CE93D8;border-color:#CE93D8;}
+.chip[data-f="barrier"].active{background:#64B5F6;border-color:#64B5F6;}
+.chip[data-f="ostomate"].active{background:#F48FB1;border-color:#F48FB1;}
+
+/* 地図 */
 #map{flex:1;position:relative;z-index:0;min-height:0;}
 .leaflet-container{font-family:inherit;}
-.leaflet-control-zoom a{width:30px!important;height:30px!important;line-height:30px!important;border-radius:7px!important;border:1px solid var(--border)!important;background:var(--bg)!important;color:var(--text)!important;}
-.mk{border-radius:50%;border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.28);}
-#bot{background:var(--bg);border-top:1px solid var(--border);flex-shrink:0;max-height:58vh;overflow-y:auto;padding-bottom:var(--sab);}
-#pull{width:34px;height:3px;background:var(--border);border-radius:2px;margin:7px auto 3px;}
-#det{display:none;padding:2px 13px 13px;}
+.leaflet-control-zoom{border:none!important;box-shadow:var(--shadow)!important;}
+.leaflet-control-zoom a{
+  width:32px!important;height:32px!important;line-height:32px!important;
+  border-radius:50%!important;border:none!important;
+  background:var(--card)!important;color:var(--mint-d)!important;
+  font-size:16px!important;font-weight:700!important;margin-bottom:4px!important;
+  box-shadow:0 2px 8px rgba(0,0,0,.1)!important;
+}
+/* タイルを柔らかく */
+.leaflet-tile{filter:saturate(0.85) brightness(1.02);}
+
+/* ボトムシート */
+#bot{
+  background:var(--card);border-top:2px solid var(--mint-l);
+  flex-shrink:0;max-height:58vh;overflow-y:auto;
+  padding-bottom:var(--sab);
+  border-radius:var(--rb) var(--rb) 0 0;
+  box-shadow:0 -4px 20px rgba(76,175,125,0.1);
+}
+#pull{
+  width:40px;height:4px;background:var(--mint-l);
+  border-radius:2px;margin:10px auto 4px;
+}
+
+/* 施設詳細 */
+#det{display:none;padding:4px 14px 16px;}
 #det.show{display:block;}
-.dn{font-size:15px;font-weight:700;margin-bottom:2px;}
-.da{font-size:11px;color:var(--text2);margin-bottom:8px;}
-.dtags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px;}
-.tag{padding:3px 8px;border-radius:8px;font-size:11px;font-weight:600;}
-.t-diaper{background:var(--green-l);color:var(--green-m);}
-.t-barrier{background:var(--blue-l);color:var(--blue);}
-.t-nursing{background:var(--amber-l);color:var(--amber);}
-.t-ostomate{background:var(--red-l);color:var(--red);}
-.t-ai{background:#F3E8FF;color:#6B21A8;}
-.drow{display:flex;align-items:center;gap:6px;padding:5px 0;border-top:1px solid var(--border);font-size:12px;color:var(--text2);}
-.drow span:last-child{color:var(--text);margin-left:auto;font-size:12px;}
-.dfeats{margin-top:7px;font-size:11px;color:var(--text2);line-height:1.8;}
-.aipanel{margin-top:9px;background:#F9F5FF;border-radius:8px;padding:9px 11px;border:1px solid #E9D5FF;}
-.aiptitle{font-size:11px;font-weight:700;color:#6B21A8;margin-bottom:4px;}
-.aiptext{font-size:11px;color:#4C1D95;line-height:1.7;}
-.aiconf{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:600;margin-top:4px;}
-.c-high{background:#D1FAE5;color:#065F46;}
-.c-mid{background:#FEF3C7;color:#92400E;}
-.c-low{background:#FEE2E2;color:#991B1B;}
-.dsrc{font-size:10px;color:var(--text2);margin-top:6px;background:var(--bg2);padding:3px 8px;border-radius:5px;}
-.nbtn{display:block;width:100%;margin-top:9px;padding:10px;border-radius:var(--r);border:1.5px solid var(--green);color:var(--green);background:transparent;font-size:13px;font-weight:700;cursor:pointer;text-align:center;}
-.nbtn:active{background:var(--green-l);}
-#lhdr{padding:7px 13px 2px;font-size:11px;color:var(--text2);font-weight:600;display:flex;align-items:center;justify-content:space-between;}
-#dnote{font-size:10px;color:var(--text2);}
-.fi{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:transparent;}
-.fi:active{background:var(--bg2);}
-.fic{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:17px;position:relative;}
-.fiai{position:absolute;top:0;right:0;width:10px;height:10px;border-radius:50%;background:#8B5CF6;border:1.5px solid #fff;}
+.det-head{
+  background:linear-gradient(135deg,var(--mint-ll),var(--bg2));
+  border-radius:var(--r);padding:12px;margin-bottom:10px;
+  border:1px solid var(--mint-l);
+}
+.dn{font-size:16px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.da{font-size:11px;color:var(--text2);}
+.dtags{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0;}
+.tag{
+  padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;
+  display:flex;align-items:center;gap:4px;
+}
+.t-diaper{background:var(--peach-l);color:#D84315;}
+.t-barrier{background:var(--sky-l);color:#1565C0;}
+.t-nursing{background:var(--lav-l);color:#6A1B9A;}
+.t-ostomate{background:var(--rose-l);color:#880E4F;}
+.drow{
+  display:flex;align-items:center;gap:8px;padding:7px 0;
+  border-top:1px solid var(--border);font-size:12px;color:var(--text2);
+}
+.drow span:last-child{color:var(--text);margin-left:auto;font-size:12px;font-weight:600;}
+.dfeats{
+  margin-top:8px;background:var(--mint-ll);border-radius:12px;
+  padding:10px 12px;font-size:11px;color:var(--mint-d);line-height:1.9;
+}
+.dsrc{font-size:10px;color:var(--text2);margin-top:7px;text-align:right;}
+.nbtn{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  width:100%;margin-top:10px;padding:12px;border-radius:var(--rb);
+  background:linear-gradient(135deg,#4CAF7D,#66BB8A);
+  color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer;
+  box-shadow:0 3px 12px rgba(76,175,125,0.35);
+  -webkit-tap-highlight-color:transparent;
+}
+.nbtn:active{opacity:.85;}
+
+/* 施設リスト */
+#lhdr{
+  padding:10px 14px 4px;font-size:12px;color:var(--text2);font-weight:700;
+  display:flex;align-items:center;justify-content:space-between;
+}
+#dnote{font-size:10px;color:var(--mint);}
+.fi{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border-bottom:1px solid var(--border);cursor:pointer;
+  -webkit-tap-highlight-color:transparent;transition:background .1s;
+}
+.fi:active{background:var(--mint-ll);}
+.fic{
+  width:42px;height:42px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-size:22px;box-shadow:0 2px 6px rgba(0,0,0,.08);
+}
 .fin{flex:1;min-width:0;}
-.finame{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.fisub{font-size:10px;color:var(--text2);margin-top:1px;}
-.fidist{font-size:11px;color:var(--text2);flex-shrink:0;}
-#loading{position:absolute;inset:0;background:rgba(255,255,255,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:1000;}
-.spinner{width:34px;height:34px;border:3px solid var(--green-l);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;}
+.finame{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);}
+.fisub{font-size:10px;color:var(--text2);margin-top:2px;}
+.fidist{
+  font-size:11px;font-weight:600;color:var(--mint-d);
+  background:var(--mint-ll);padding:3px 7px;border-radius:10px;flex-shrink:0;
+}
+.fempty{padding:30px 20px;text-align:center;color:var(--text2);font-size:13px;line-height:2;}
+
+/* ローディング */
+#loading{
+  position:absolute;inset:0;
+  background:rgba(240,250,245,.95);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:1000;
+}
+.spinner{
+  width:48px;height:48px;border:4px solid var(--mint-l);
+  border-top-color:var(--mint);border-radius:50%;animation:spin .8s linear infinite;
+}
 @keyframes spin{to{transform:rotate(360deg);}}
-.ldt{font-size:13px;color:var(--green);font-weight:600;}
+.ldt{font-size:14px;color:var(--mint-d);font-weight:700;}
 .lds{font-size:11px;color:var(--text2);}
-#offbar{display:none;position:absolute;top:0;left:0;right:0;background:#A32D2D;color:#fff;font-size:12px;text-align:center;padding:5px;z-index:999;}
+.load-icon{font-size:36px;animation:bounce 1s ease infinite alternate;}
+@keyframes bounce{from{transform:translateY(0);}to{transform:translateY(-8px);}}
+
+/* オフライン */
+#offbar{
+  display:none;position:absolute;top:0;left:0;right:0;
+  background:#FF7043;color:#fff;font-size:12px;text-align:center;
+  padding:6px;z-index:999;border-radius:0 0 8px 8px;
+}
 #offbar.show{display:block;}
-#insbar{display:none;position:absolute;bottom:0;left:0;right:0;background:var(--green);color:#fff;padding:11px 14px;z-index:998;flex-direction:column;gap:7px;}
+
+/* インストール */
+#insbar{
+  display:none;position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(135deg,#4CAF7D,#66BB8A);
+  color:#fff;padding:12px 16px;z-index:998;
+  flex-direction:column;gap:8px;border-radius:var(--rb) var(--rb) 0 0;
+}
 #insbar.show{display:flex;}
-#insbar p{font-size:13px;font-weight:600;}
-#insbar small{font-size:10px;opacity:.8;}
-.irow{display:flex;gap:7px;}
-#ibtn{flex:1;padding:7px;border-radius:7px;background:#fff;color:var(--green);border:none;font-size:13px;font-weight:700;cursor:pointer;}
-#ino{padding:7px 11px;border-radius:7px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);font-size:12px;cursor:pointer;}
+#insbar p{font-size:13px;font-weight:700;}
+#insbar small{font-size:10px;opacity:.85;}
+.irow{display:flex;gap:8px;}
+#ibtn{flex:1;padding:9px;border-radius:20px;background:#fff;color:var(--mint-d);border:none;font-size:13px;font-weight:700;cursor:pointer;}
+#ino{padding:9px 14px;border-radius:20px;background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5);font-size:12px;cursor:pointer;}
 </style>
 </head>
 <body>
 <div id="app">
   <div id="hdr">
-    <h1>🚼 ベビーマップ Japan</h1>
-    <p>多目的トイレ・おむつ替え施設 — Google Places + AI解析</p>
+    <div id="hdr-inner">
+      <div id="hdr-icon">🚼</div>
+      <div id="hdr-text">
+        <h1>ベビーマップ Japan</h1>
+        <p>おむつ替え・授乳室・多目的トイレを地図で検索</p>
+      </div>
+    </div>
   </div>
+
   <div id="srow">
-    <input id="sinput" type="search" placeholder="施設名・駅名・エリアで検索..." autocomplete="off">
-    <button id="lbtn" aria-label="現在地">
+    <div id="swrap">
+      <input id="sinput" type="search" placeholder="🔍 住所・駅名・エリアで検索..." autocomplete="off">
+      <button id="sclear" onclick="clearSearch()">✕</button>
+      <div id="suggest"></div>
+    </div>
+    <button id="lbtn" aria-label="現在地を取得">
       <svg viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
     </button>
   </div>
+
   <div id="frow">
-    <div class="chip active" data-f="all">すべて</div>
+    <div class="chip active" data-f="all">🗺 すべて</div>
     <div class="chip" data-f="diaper">🍼 おむつ替え</div>
-    <div class="chip" data-f="barrier">♿ バリアフリー</div>
     <div class="chip" data-f="nursing">🤱 授乳室</div>
+    <div class="chip" data-f="barrier">♿ バリアフリー</div>
     <div class="chip" data-f="ostomate">🏥 オストメイト</div>
-    <div class="chip" data-f="ai">🤖 AI確認済み</div>
   </div>
+
   <div id="map">
     <div id="loading">
+      <div class="load-icon">🚼</div>
       <div class="spinner"></div>
       <div class="ldt">周辺施設を検索中...</div>
-      <div class="lds">Google Places + AI解析を実行しています</div>
+      <div class="lds">OpenStreetMapからデータを取得しています</div>
     </div>
-    <div id="offbar">📡 オフラインです。キャッシュデータを表示中</div>
+    <div id="offbar">📡 オフラインです。移動すると最新データを取得します</div>
   </div>
+
   <div id="bot">
     <div id="pull"></div>
     <div id="det">
-      <div class="dn" id="dn"></div>
-      <div class="da" id="da"></div>
+      <div class="det-head">
+        <div class="dn" id="dn"></div>
+        <div class="da" id="da"></div>
+      </div>
       <div class="dtags" id="dtags"></div>
       <div class="drow"><span>🕐</span><span>営業時間</span><span id="dhours"></span></div>
-      <div class="drow"><span>⭐</span><span>評価</span><span id="drating"></span></div>
       <div class="drow"><span>📍</span><span>現在地から</span><span id="ddist"></span></div>
-      <div class="dfeats" id="dfeats"></div>
-      <div id="daipanel"></div>
+      <div class="drow"><span>♿</span><span>アクセス</span><span id="daccess"></span></div>
+      <div class="dfeats" id="dfeats" style="display:none"></div>
       <div class="dsrc" id="dsrc"></div>
-      <button class="nbtn" id="nbtn">Google マップでナビ ↗</button>
+      <button class="nbtn" id="nbtn">🗺 Google マップでナビ</button>
     </div>
     <div id="lhdr"><span id="lcnt">付近の施設</span><span id="dnote"></span></div>
     <div id="flist"></div>
   </div>
+
   <div id="insbar">
     <p>📲 ホーム画面に追加できます</p>
-    <small>オフラインでも使えるアプリとして保存</small>
+    <small>インターネットなしでも使えるアプリとして保存できます</small>
     <div class="irow"><button id="ibtn">インストール</button><button id="ino">後で</button></div>
   </div>
 </div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// === 設定 ===
-const GKEY   = 'AIzaSyCqM8h9zwC_4SWlSkXTB1yloweM-EhttS0';
-const PROXY  = 'https://corsproxy.io/?';
+// ================================================
+// 施設タイプ別アイコン定義（用途に応じた絵文字）
+// ================================================
+function getFacilityIcon(tags, amenity) {
+  // タグの組み合わせで最適なアイコンを選ぶ
+  const hasD = tags.includes('diaper');
+  const hasN = tags.includes('nursing');
+  const hasB = tags.includes('barrier');
+  const hasO = tags.includes('ostomate');
+
+  if (hasD && hasN) return { em:'🍼', bg:'#FF8A65', label:'おむつ替え＋授乳' };
+  if (hasD)         return { em:'🍼', bg:'#FFA07A', label:'おむつ替え台' };
+  if (hasN)         return { em:'🤱', bg:'#CE93D8', label:'授乳室' };
+  if (hasO)         return { em:'🏥', bg:'#F48FB1', label:'オストメイト' };
+  if (hasB)         return { em:'♿', bg:'#64B5F6', label:'多目的トイレ' };
+  return            { em:'🚻', bg:'#A5D6A7', label:'トイレ' };
+}
+
+// ================================================
+// 定数・状態
+// ================================================
 const RADIUS = 2000;
-const DLAT   = 35.6581, DLNG = 139.7017;
+const DEFAULT_LAT = 35.6762, DEFAULT_LNG = 139.6503;
 
-// === キーワード辞書 ===
-const KW_DIAPER  = ['おむつ','オムツ','diaper','changing table','ベビーシート','赤ちゃん','ベビールーム','乳幼児'];
-const KW_NURSING = ['授乳','nursing','哺乳','mother room','ベビールーム','授乳室'];
-const KW_BARRIER = ['バリアフリー','車椅子','wheelchair','多目的','ユニバーサル','accessible'];
-const KW_OSTO    = ['オストメイト','ostomate','ストーマ'];
+const TAGMAP = {
+  diaper:  ['🍼 おむつ替え',   't-diaper'],
+  barrier: ['♿ バリアフリー', 't-barrier'],
+  nursing: ['🤱 授乳室',       't-nursing'],
+  ostomate:['🏥 オストメイト', 't-ostomate'],
+};
 
-const TYPE_BG    = {shopping:'#E1F5EE',station:'#E6F1FB',public:'#FAEEDA',hospital:'#FCEBEB',park:'#EAF3DE'};
-const TYPE_COL   = {shopping:'#0F6E56',station:'#185FA5',public:'#854F0B',hospital:'#A32D2D',park:'#3B6D11'};
-const TAGMAP     = {diaper:['🍼 おむつ替え','t-diaper'],barrier:['♿ バリアフリー','t-barrier'],nursing:['🤱 授乳室','t-nursing'],ostomate:['🏥 オストメイト','t-ostomate'],ai:['🤖 AI確認済み','t-ai']};
-
-// === 状態 ===
 let map, uMarker;
-let uLat=DLAT, uLng=DLNG;
-let facs=[], mkMap={}, selId=null, curF='all';
-let deferredPrompt=null, aiCache={};
+let uLat = DEFAULT_LAT, uLng = DEFAULT_LNG;
+let facs = [], mkMap = {}, selId = null, curF = 'all';
+let moveTimer = null, lastPos = null;
+let deferredPrompt = null, geoTimer = null;
 
-// === 地図 ===
-function initMap(){
-  map=L.map('map',{zoomControl:true}).setView([uLat,uLng],15);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',maxZoom:19
+// ================================================
+// 地図初期化
+// ================================================
+function initMap() {
+  map = L.map('map', {zoomControl:true}).setView([uLat, uLng], 15);
+
+  // やわらかいタイルスタイル
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom:19,
   }).addTo(map);
-  placeUser(uLat,uLng);
-  map.on('moveend',()=>{const c=map.getCenter();search(c.lat,c.lng);});
-}
 
-function placeUser(lat,lng){
-  const ico=L.divIcon({className:'',html:`<div style="width:18px;height:18px;border-radius:50%;background:#1A6B4A;border:3px solid #fff;box-shadow:0 0 0 5px rgba(26,107,74,0.2);"></div>`,iconSize:[18,18],iconAnchor:[9,9]});
-  if(uMarker) uMarker.setLatLng([lat,lng]);
-  else uMarker=L.marker([lat,lng],{icon:ico,zIndexOffset:1000}).addTo(map).bindPopup('現在地');
-}
+  placeUser(uLat, uLng);
 
-function mkIcon(f){
-  const bg=TYPE_COL[f.type]||'#555';
-  const sz=f.id===selId?38:34;
-  const dot=f.aiVerified?`<div style="position:absolute;top:-3px;right:-3px;width:12px;height:12px;border-radius:50%;background:#8B5CF6;border:1.5px solid #fff;"></div>`:'';
-  return L.divIcon({className:'',html:`<div style="position:relative;width:${sz}px;height:${sz}px;"><div class="mk" style="width:100%;height:100%;background:${bg};font-size:${sz===38?18:16}px;">${f.em}</div>${dot}</div>`,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],popupAnchor:[0,-sz/2]});
-}
-
-// === Google Places 検索 ===
-async function search(lat,lng){
-  setLoad(true,'施設を検索中...');
-  document.getElementById('dnote').textContent='検索中...';
-  const types=['shopping_mall','train_station','city_hall','hospital','park','department_store'];
-  let all=[];
-  try{
-    await Promise.allSettled(types.map(async t=>{
-      const url=`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${RADIUS}&type=${t}&language=ja&key=${GKEY}`;
-      const r=await fetch(PROXY+encodeURIComponent(url));
-      const j=await r.json();
-      all.push(...(j.results||[]));
-    }));
-    // 重複除去
-    const seen=new Set();
-    all=all.filter(p=>{if(seen.has(p.place_id))return false;seen.add(p.place_id);return true;});
-    document.getElementById('dnote').textContent='Google Places';
-    // 詳細 + AI解析（上位12件）
-    const results=await Promise.allSettled(all.slice(0,12).map(p=>detail(p)));
-    facs=results.filter(r=>r.status==='fulfilled'&&r.value).map(r=>r.value);
-    if(facs.length===0) facs=fallback();
-  }catch(e){
-    console.warn('Places API error:',e);
-    facs=fallback();
-    document.getElementById('dnote').textContent='ローカルデータ';
-  }
-  renderMk();renderList();setLoad(false);
-}
-
-async function detail(place){
-  const fields='place_id,name,vicinity,geometry,opening_hours,rating,reviews,types,wheelchair_accessible_entrance';
-  const url=`https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=${fields}&language=ja&key=${GKEY}`;
-  const r=await fetch(PROXY+encodeURIComponent(url));
-  const j=await r.json();
-  const p=j.result;
-  if(!p)return null;
-  const reviews=(p.reviews||[]).map(rv=>rv.text).filter(Boolean);
-  const ai=await analyzeAI(p.name,reviews,p.place_id);
-  const tags=buildTags(p,ai);
-  return {
-    id:p.place_id,name:p.name,addr:p.vicinity||'',floor:'',
-    type:gType(p.types||[]),em:gEmoji(p.types||[]),
-    lat:p.geometry.location.lat,lng:p.geometry.location.lng,
-    tags,hours:fmtHours(p.opening_hours),
-    rating:p.rating?`${p.rating} ⭐`:'情報なし',
-    access:p.wheelchair_accessible_entrance?'バリアフリー入口あり':'詳細不明',
-    feats:ai.feats,aiVerified:ai.verified,
-    aiSummary:ai.summary,aiConf:ai.conf,
-    source:'Google Places API',
-  };
-}
-
-// === AI クチコミ解析（キーワードベース）===
-async function analyzeAI(name,reviews,pid){
-  if(aiCache[pid])return aiCache[pid];
-  const def={verified:false,summary:null,conf:'low',feats:[],hasDiaper:false,hasNursing:false};
-  if(!reviews.length)return def;
-  const txt=reviews.join(' ').toLowerCase();
-  const hD=KW_DIAPER.some(k=>txt.includes(k.toLowerCase()));
-  const hN=KW_NURSING.some(k=>txt.includes(k.toLowerCase()));
-  const hB=KW_BARRIER.some(k=>txt.includes(k.toLowerCase()));
-  const hO=KW_OSTO.some(k=>txt.includes(k.toLowerCase()));
-  const feats=[];
-  if(hD)feats.push('クチコミ: おむつ替え台の記載あり');
-  if(hN)feats.push('クチコミ: 授乳室の記載あり');
-  if(hB)feats.push('クチコミ: バリアフリーの記載あり');
-  if(hO)feats.push('クチコミ: オストメイトの記載あり');
-  const hits=[hD,hN,hB,hO].filter(Boolean).length;
-  const res={
-    hasDiaper:hD,hasNursing:hN,
-    verified:hits>0,
-    conf:hits>=2?'high':hits===1?'mid':'low',
-    feats,summary:hits>0?`${name}はクチコミにベビー設備の記載があります`:null,
-  };
-  aiCache[pid]=res;
-  return res;
-}
-
-function buildTags(p,ai){
-  const t=[];
-  if(ai.hasDiaper)t.push('diaper');
-  if(ai.hasNursing)t.push('nursing');
-  if(p.wheelchair_accessible_entrance||ai.feats.some(f=>f.includes('バリアフリー')))t.push('barrier');
-  if(ai.feats.some(f=>f.includes('オストメイト')))t.push('ostomate');
-  if(ai.verified)t.push('ai');
-  if(!t.length)t.push('barrier');
-  return t;
-}
-
-function gType(types){
-  if(types.some(t=>['shopping_mall','department_store'].includes(t)))return 'shopping';
-  if(types.some(t=>['train_station','subway_station'].includes(t)))return 'station';
-  if(types.some(t=>['hospital','doctor'].includes(t)))return 'hospital';
-  if(types.some(t=>['park'].includes(t)))return 'park';
-  return 'public';
-}
-function gEmoji(types){
-  if(types.includes('train_station')||types.includes('subway_station'))return '🚃';
-  if(types.includes('hospital'))return '🏥';
-  if(types.includes('park'))return '🌳';
-  if(types.includes('shopping_mall')||types.includes('department_store'))return '🏬';
-  if(types.includes('city_hall'))return '🏛';
-  return '🏢';
-}
-function fmtHours(oh){
-  if(!oh)return '情報なし';
-  if(oh.open_now===true)return '現在営業中';
-  if(oh.open_now===false)return '現在閉店中';
-  return '詳細不明';
-}
-
-// === フォールバック ===
-function fallback(){
-  return [
-    {id:'fb0',name:'渋谷ヒカリエ',addr:'渋谷区渋谷2-21-1',floor:'6F',type:'shopping',em:'🏬',lat:35.6593,lng:139.7026,tags:['diaper','nursing','barrier'],hours:'11:00〜21:00',rating:'4.1 ⭐',access:'全館バリアフリー',feats:['おむつ替えシート','授乳ブース'],aiVerified:false,aiSummary:null,aiConf:'low',source:'ローカルデータ'},
-    {id:'fb1',name:'渋谷駅（JR）',addr:'渋谷区渋谷2-1',floor:'',type:'station',em:'🚃',lat:35.6581,lng:139.7017,tags:['diaper','barrier'],hours:'5:00〜翌1:00',rating:'3.8 ⭐',access:'エレベーター完備',feats:['バリアフリートイレ','おむつ替え台'],aiVerified:false,aiSummary:null,aiConf:'low',source:'ローカルデータ'},
-    {id:'fb2',name:'渋谷区役所',addr:'渋谷区宇田川町1-1',floor:'1F',type:'public',em:'🏛',lat:35.6618,lng:139.6985,tags:['diaper','barrier','nursing','ostomate'],hours:'8:30〜17:00',rating:'3.5 ⭐',access:'車椅子対応',feats:['多目的トイレ','授乳室','オストメイト'],aiVerified:false,aiSummary:null,aiConf:'low',source:'ローカルデータ'},
-  ];
-}
-
-// === レンダリング ===
-function renderMk(){
-  const vis=facs.filter(f=>curF==='all'||f.tags.includes(curF));
-  const visIds=new Set(vis.map(f=>f.id));
-  Object.entries(mkMap).forEach(([id,m])=>{if(!visIds.has(id)){map.removeLayer(m);delete mkMap[id];}});
-  vis.forEach(f=>{
-    const ico=mkIcon(f);
-    if(mkMap[f.id])mkMap[f.id].setIcon(ico);
-    else{const m=L.marker([f.lat,f.lng],{icon:ico}).addTo(map);m.on('click',()=>sel(f.id));mkMap[f.id]=m;}
+  map.on('moveend', () => {
+    const c = map.getCenter();
+    clearTimeout(moveTimer);
+    moveTimer = setTimeout(() => fetchFacilities(c.lat, c.lng), 700);
   });
 }
 
-function renderList(){
-  const q=document.getElementById('sinput').value.toLowerCase();
-  let items=facs;
-  if(q)items=items.filter(f=>f.name.includes(q)||(f.addr||'').includes(q));
-  if(curF!=='all')items=items.filter(f=>f.tags.includes(curF));
-  items.sort((a,b)=>gdist(uLat,uLng,a.lat,a.lng)-gdist(uLat,uLng,b.lat,b.lng));
-  document.getElementById('lcnt').textContent=`付近の施設（${items.length}件）`;
-  document.getElementById('flist').innerHTML=items.map(f=>{
-    const d=fmtd(uLat,uLng,f.lat,f.lng);
-    const bg=TYPE_BG[f.type]||'#F1EFE8';
-    const dot=f.aiVerified?'<div class="fiai"></div>':'';
-    return `<div class="fi" onclick="sel('${f.id}')"><div class="fic" style="background:${bg}">${f.em}${dot}</div><div class="fin"><div class="finame">${f.name}</div><div class="fisub">${f.tags.map(t=>TAGMAP[t]?.[0]||'').join(' · ')}</div></div><div class="fidist">${d}</div></div>`;
+function placeUser(lat, lng) {
+  const ico = L.divIcon({
+    className:'',
+    html:`<div style="
+      width:22px;height:22px;border-radius:50%;
+      background:linear-gradient(135deg,#4CAF7D,#66BB8A);
+      border:3px solid #fff;
+      box-shadow:0 0 0 5px rgba(76,175,125,0.25),0 2px 8px rgba(0,0,0,0.2);
+    "></div>`,
+    iconSize:[22,22], iconAnchor:[11,11],
+  });
+  if (uMarker) uMarker.setLatLng([lat,lng]);
+  else uMarker = L.marker([lat,lng],{icon:ico,zIndexOffset:1000}).addTo(map).bindPopup('📍 現在地');
+}
+
+function makeMkIcon(f) {
+  const ico = getFacilityIcon(f.tags, f.amenity);
+  const isSel = f.id === selId;
+  const sz = isSel ? 44 : 38;
+  const ring = isSel ? `box-shadow:0 0 0 5px rgba(76,175,125,0.3),0 3px 10px rgba(0,0,0,0.2);transform:scale(1.05);` : `box-shadow:0 2px 8px rgba(0,0,0,0.2);`;
+  return L.divIcon({
+    className:'',
+    html:`<div style="
+      width:${sz}px;height:${sz}px;border-radius:50%;
+      background:${ico.bg};border:3px solid #fff;
+      display:flex;align-items:center;justify-content:center;
+      font-size:${isSel?22:18}px;${ring}
+      transition:all .2s;
+    ">${ico.em}</div>`,
+    iconSize:[sz,sz], iconAnchor:[sz/2,sz/2], popupAnchor:[0,-sz/2],
+  });
+}
+
+// ================================================
+// Overpass API — 全国対応・リアルタイム
+// ================================================
+async function fetchFacilities(lat, lng) {
+  const posKey = `${lat.toFixed(3)},${lng.toFixed(3)}`;
+  if (posKey === lastPos) return;
+  lastPos = posKey;
+
+  setLoad(true, '施設データを取得中...');
+  document.getElementById('dnote').textContent = '取得中...';
+
+  const query = `
+[out:json][timeout:25];
+(
+  node["amenity"="toilets"]["changing_table"="yes"](around:${RADIUS},${lat},${lng});
+  node["amenity"="toilets"]["wheelchair"="yes"](around:${RADIUS},${lat},${lng});
+  node["amenity"="toilets"]["ostomate"="yes"](around:${RADIUS},${lat},${lng});
+  node["amenity"="nursing_room"](around:${RADIUS},${lat},${lng});
+  node["amenity"="baby_hatch"](around:${RADIUS},${lat},${lng});
+  node["changing_table"="yes"](around:${RADIUS},${lat},${lng});
+  node["toilets:wheelchair"="yes"](around:${RADIUS},${lat},${lng});
+  way["amenity"="toilets"]["changing_table"="yes"](around:${RADIUS},${lat},${lng});
+  way["amenity"="toilets"]["wheelchair"="yes"](around:${RADIUS},${lat},${lng});
+);
+out center tags;
+  `.trim();
+
+  try {
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method:'POST', body:query,
+      signal:AbortSignal.timeout(18000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    facs = parseOverpass(json.elements || [], lat, lng);
+    document.getElementById('dnote').textContent = `OpenStreetMap（${facs.length}件）`;
+  } catch(e) {
+    console.warn('Overpass:', e.message);
+    document.getElementById('dnote').textContent = '取得失敗 — 地図を動かして再試行';
+    facs = [];
+  }
+
+  renderMk();
+  renderList();
+  setLoad(false);
+}
+
+function parseOverpass(els, cLat, cLng) {
+  const seen = new Set();
+  return els.map(el => {
+    const t = el.tags || {};
+    const lat = el.lat ?? el.center?.lat;
+    const lng = el.lon ?? el.center?.lon;
+    if (!lat || !lng) return null;
+
+    const key = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+    if (seen.has(key)) return null;
+    seen.add(key);
+
+    const tags = [];
+    if (t.changing_table === 'yes' || t['changing_table:fee'] === 'no') tags.push('diaper');
+    if (t.wheelchair === 'yes' || t['toilets:wheelchair'] === 'yes') tags.push('barrier');
+    if (t.amenity === 'nursing_room' || t['healthcare:nursing_room'] === 'yes' || t.amenity === 'baby_hatch') tags.push('nursing');
+    if (t.ostomate === 'yes' || t['toilets:ostomate'] === 'yes') tags.push('ostomate');
+    if (!tags.length) tags.push('barrier');
+
+    const feats = [];
+    if (t.changing_table === 'yes') feats.push('🍼 おむつ替え台あり');
+    if (t.changing_table_location) feats.push(`📍 おむつ台の場所: ${t.changing_table_location}`);
+    if (t.wheelchair === 'yes') feats.push('♿ 車椅子対応');
+    if (t.ostomate === 'yes') feats.push('🏥 オストメイト設備');
+    if (t.fee === 'no') feats.push('💴 無料');
+    if (t.fee === 'yes') feats.push('💴 有料');
+    if (t['changing_table:count']) feats.push(`🍼 おむつ台 ${t['changing_table:count']}台`);
+
+    const name = t.name || t['name:ja'] || amenityLabel(t.amenity);
+    const addr = [t['addr:prefecture'], t['addr:city'], t['addr:street']].filter(Boolean).join('');
+
+    return {
+      id:`${el.type}${el.id}`,
+      name, addr, amenity: t.amenity,
+      tags, feats,
+      lat, lng,
+      hours: t.opening_hours || '詳細不明',
+      access: t.wheelchair === 'yes' ? '車椅子対応' : '詳細不明',
+      source:'OpenStreetMap contributors',
+    };
+  }).filter(Boolean)
+    .sort((a,b) => gdist(cLat,cLng,a.lat,a.lng) - gdist(cLat,cLng,b.lat,b.lng));
+}
+
+function amenityLabel(a) {
+  return {toilets:'トイレ',nursing_room:'授乳室',baby_hatch:'ベビーステーション'}[a] || '施設';
+}
+
+// ================================================
+// 住所検索（Nominatim — 無料・CORS対応）
+// ================================================
+const suggestEl = document.getElementById('suggest');
+
+document.getElementById('sinput').addEventListener('input', e => {
+  const q = e.target.value.trim();
+  document.getElementById('sclear').style.display = q ? 'block' : 'none';
+  clearTimeout(geoTimer);
+  if (!q) { suggestEl.style.display='none'; return; }
+  geoTimer = setTimeout(() => fetchSuggest(q), 350);
+});
+
+document.getElementById('sinput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); geocode(document.getElementById('sinput').value.trim()); }
+});
+
+async function fetchSuggest(q) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6&countrycodes=jp&accept-language=ja`;
+    const r = await fetch(url, {headers:{'Accept-Language':'ja'}});
+    const items = await r.json();
+    if (!items.length) { suggestEl.style.display='none'; return; }
+    suggestEl.innerHTML = items.map(item => {
+      const parts = item.display_name.split(',');
+      const name = parts[0].trim();
+      const addr = parts.slice(1,3).join(',').trim();
+      const ico = geoIco(item.type, item.class);
+      return `<div class="sg" onclick="moveToGeo(${item.lat},${item.lon},'${esc(name)}')">
+        <span class="sg-ico">${ico}</span>
+        <div><div class="sg-name">${esc(name)}</div><div class="sg-addr">${esc(addr)}</div></div>
+      </div>`;
+    }).join('');
+    suggestEl.style.display = 'block';
+  } catch(e) { suggestEl.style.display='none'; }
+}
+
+async function geocode(q) {
+  if (!q) return;
+  setLoad(true, `「${q}」を検索中...`);
+  suggestEl.style.display = 'none';
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=jp&accept-language=ja`;
+    const r = await fetch(url, {headers:{'Accept-Language':'ja'}});
+    const items = await r.json();
+    if (items.length) moveToGeo(items[0].lat, items[0].lon, items[0].display_name.split(',')[0]);
+    else { setLoad(false); alert(`「${q}」が見つかりませんでした。`); }
+  } catch(e) { setLoad(false); alert('検索に失敗しました。'); }
+}
+
+window.moveToGeo = function(lat, lng, name) {
+  suggestEl.style.display = 'none';
+  document.getElementById('sinput').value = name;
+  document.getElementById('sclear').style.display = 'block';
+  uLat = parseFloat(lat); uLng = parseFloat(lng);
+  placeUser(uLat, uLng);
+  lastPos = null;
+  map.setView([uLat, uLng], 15, {animate:true});
+  setLoad(false);
+};
+
+window.clearSearch = function() {
+  document.getElementById('sinput').value = '';
+  document.getElementById('sclear').style.display = 'none';
+  suggestEl.style.display = 'none';
+};
+
+function geoIco(type, cls) {
+  if (cls==='railway'||type==='station') return '🚃';
+  if (type==='hospital') return '🏥';
+  if (cls==='leisure') return '🌳';
+  if (cls==='shop') return '🏪';
+  if (type==='city'||type==='town'||type==='village') return '🏘';
+  return '📍';
+}
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('swrap').contains(e.target)) suggestEl.style.display='none';
+});
+
+// ================================================
+// レンダリング
+// ================================================
+function renderMk() {
+  const vis = facs.filter(f => curF==='all' || f.tags.includes(curF));
+  const visIds = new Set(vis.map(f=>f.id));
+  Object.entries(mkMap).forEach(([id,m])=>{if(!visIds.has(id)){map.removeLayer(m);delete mkMap[id];}});
+  vis.forEach(f => {
+    const ico = makeMkIcon(f);
+    if (mkMap[f.id]) mkMap[f.id].setIcon(ico);
+    else {
+      const m = L.marker([f.lat,f.lng],{icon:ico}).addTo(map);
+      m.on('click', () => selF(f.id));
+      mkMap[f.id] = m;
+    }
+  });
+}
+
+function renderList() {
+  let items = facs;
+  if (curF !== 'all') items = items.filter(f=>f.tags.includes(curF));
+
+  document.getElementById('lcnt').textContent = `付近の施設（${items.length}件）`;
+
+  if (!items.length) {
+    document.getElementById('flist').innerHTML =
+      `<div class="fempty">🔍 この周辺にデータがまだありません。<br>地図を動かして別のエリアを試してください！<br><small style="color:#bbb;font-size:10px;">※OpenStreetMapへの登録数に依存します</small></div>`;
+    return;
+  }
+
+  document.getElementById('flist').innerHTML = items.map(f => {
+    const ico = getFacilityIcon(f.tags, f.amenity);
+    const d = fmtd(uLat,uLng,f.lat,f.lng);
+    return `<div class="fi" onclick="selF('${f.id}')">
+      <div class="fic" style="background:${ico.bg}20;">${ico.em}</div>
+      <div class="fin">
+        <div class="finame">${esc(f.name)}</div>
+        <div class="fisub">${f.tags.map(t=>TAGMAP[t]?.[0]||'').join(' · ')}</div>
+      </div>
+      <div class="fidist">${d}</div>
+    </div>`;
   }).join('');
 }
 
-window.sel=function(id){
-  selId=id;
-  const f=facs.find(x=>x.id===id);
-  if(!f)return;
+window.selF = function(id) {
+  selId = id;
+  const f = facs.find(x=>x.id===id);
+  if (!f) return;
   renderMk();
-  map.setView([f.lat,f.lng],Math.max(map.getZoom(),16),{animate:true});
-  document.getElementById('dn').textContent=f.name;
-  document.getElementById('da').textContent=f.addr;
-  document.getElementById('dhours').textContent=f.hours;
-  document.getElementById('drating').textContent=f.rating||'情報なし';
-  document.getElementById('ddist').textContent=fmtd(uLat,uLng,f.lat,f.lng);
-  document.getElementById('dfeats').innerHTML=f.feats?.map(x=>`・${x}`).join('<br>')||'';
-  document.getElementById('dsrc').textContent=`データ出典: ${f.source}`;
-  document.getElementById('dtags').innerHTML=f.tags.map(t=>{const[l,c]=TAGMAP[t]||[t,''];return`<span class="tag ${c}">${l}</span>`;}).join('');
-  const ap=document.getElementById('daipanel');
-  if(f.aiVerified&&f.aiSummary){
-    const cc={high:'c-high',mid:'c-mid',low:'c-low'}[f.aiConf]||'c-low';
-    const cl={high:'高信頼度',mid:'中信頼度',low:'低信頼度'}[f.aiConf]||'';
-    ap.innerHTML=`<div class="aipanel"><div class="aiptitle">🤖 AIクチコミ解析</div><div class="aiptext">${f.aiSummary}</div><span class="aiconf ${cc}">${cl}</span></div>`;
-  }else if(f.feats?.some(x=>x.includes('クチコミ'))){
-    ap.innerHTML=`<div class="aipanel"><div class="aiptitle">🔍 キーワード解析</div><div class="aiptext">${f.feats.filter(x=>x.includes('クチコミ')).join('<br>')}</div><span class="aiconf c-mid">キーワード一致</span></div>`;
-  }else{ap.innerHTML='';}
+  map.setView([f.lat,f.lng], Math.max(map.getZoom(),16), {animate:true});
+
+  const ico = getFacilityIcon(f.tags, f.amenity);
+  document.getElementById('dn').innerHTML = `${ico.em} ${esc(f.name)}`;
+  document.getElementById('da').textContent = f.addr || '住所情報なし';
+  document.getElementById('dhours').textContent = f.hours;
+  document.getElementById('ddist').textContent = fmtd(uLat,uLng,f.lat,f.lng);
+  document.getElementById('daccess').textContent = f.access;
+  document.getElementById('dtags').innerHTML = f.tags.map(t=>{
+    const[l,c]=TAGMAP[t]||[t,''];return`<span class="tag ${c}">${l}</span>`;
+  }).join('');
+
+  const featsEl = document.getElementById('dfeats');
+  if (f.feats.length) {
+    featsEl.innerHTML = f.feats.map(x=>`${x}`).join('<br>');
+    featsEl.style.display = 'block';
+  } else {
+    featsEl.style.display = 'none';
+  }
+
+  document.getElementById('dsrc').textContent = `データ: ${f.source}`;
   document.getElementById('det').classList.add('show');
   document.getElementById('bot').scrollTo({top:0,behavior:'smooth'});
 };
 
-document.getElementById('nbtn').onclick=()=>{const f=facs.find(x=>x.id===selId);if(f)window.open(`https://maps.google.com/?q=${f.lat},${f.lng}&hl=ja`,'_blank');};
+document.getElementById('nbtn').onclick = () => {
+  const f = facs.find(x=>x.id===selId);
+  if (f) window.open(`https://maps.google.com/?q=${f.lat},${f.lng}&hl=ja`,'_blank');
+};
 
-// === イベント ===
-document.querySelectorAll('.chip').forEach(c=>{
-  c.addEventListener('click',()=>{
+// ================================================
+// フィルター・イベント
+// ================================================
+document.querySelectorAll('.chip').forEach(c => {
+  c.addEventListener('click', () => {
     document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
-    c.classList.add('active');curF=c.dataset.f;
-    renderMk();renderList();document.getElementById('det').classList.remove('show');
+    c.classList.add('active');
+    curF = c.dataset.f;
+    renderMk(); renderList();
+    document.getElementById('det').classList.remove('show');
   });
 });
-document.getElementById('sinput').addEventListener('input',renderList);
-document.getElementById('lbtn').addEventListener('click',()=>{
-  if(!navigator.geolocation){alert('位置情報がサポートされていません');return;}
-  setLoad(true,'現在地を取得中...');
+
+document.getElementById('lbtn').addEventListener('click', () => {
+  if (!navigator.geolocation) { alert('位置情報がサポートされていません'); return; }
+  setLoad(true, '📍 現在地を取得中...');
   navigator.geolocation.getCurrentPosition(
-    pos=>{uLat=pos.coords.latitude;uLng=pos.coords.longitude;placeUser(uLat,uLng);map.setView([uLat,uLng],16,{animate:true});setLoad(false);search(uLat,uLng);},
-    err=>{setLoad(false);alert(`位置情報エラー: ${err.message}`);},
-    {enableHighAccuracy:true,timeout:10000}
+    pos => {
+      uLat=pos.coords.latitude; uLng=pos.coords.longitude;
+      placeUser(uLat, uLng);
+      map.setView([uLat,uLng],15,{animate:true});
+      clearSearch();
+      lastPos=null;
+      fetchFacilities(uLat, uLng);
+    },
+    err => { setLoad(false); alert(`位置情報エラー: ${err.message}`); },
+    {enableHighAccuracy:true, timeout:10000}
   );
 });
 
-// === ユーティリティ ===
-function gdist(a,b,c,d){const R=6371000,dA=(c-a)*Math.PI/180,dB=(d-b)*Math.PI/180;const e=Math.sin(dA/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dB/2)**2;return R*2*Math.atan2(Math.sqrt(e),Math.sqrt(1-e));}
+// ================================================
+// ユーティリティ
+// ================================================
+function gdist(a,b,c,d){
+  const R=6371000,dA=(c-a)*Math.PI/180,dB=(d-b)*Math.PI/180;
+  const e=Math.sin(dA/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dB/2)**2;
+  return R*2*Math.atan2(Math.sqrt(e),Math.sqrt(1-e));
+}
 function fmtd(a,b,c,d){const m=gdist(a,b,c,d);return m<1000?`${Math.round(m)}m`:`${(m/1000).toFixed(1)}km`;}
-function setLoad(s,m=''){const e=document.getElementById('loading');e.style.display=s?'flex':'none';if(m)e.querySelector('.ldt').textContent=m;}
+function setLoad(s,msg=''){
+  const el=document.getElementById('loading');
+  el.style.display=s?'flex':'none';
+  if(msg)el.querySelector('.ldt').textContent=msg;
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-// === オフライン・PWA ===
+// ================================================
+// オフライン・PWA
+// ================================================
 window.addEventListener('online',()=>document.getElementById('offbar').classList.remove('show'));
 window.addEventListener('offline',()=>document.getElementById('offbar').classList.add('show'));
 if(!navigator.onLine)document.getElementById('offbar').classList.add('show');
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('insbar').classList.add('show');});
-document.getElementById('ibtn').onclick=async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;document.getElementById('insbar').classList.remove('show');};
+
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  document.getElementById('insbar').classList.add('show');
+});
+document.getElementById('ibtn').onclick=async()=>{
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();await deferredPrompt.userChoice;
+  deferredPrompt=null;document.getElementById('insbar').classList.remove('show');
+};
 document.getElementById('ino').onclick=()=>document.getElementById('insbar').classList.remove('show');
 
-// === 起動 ===
+// ================================================
+// 起動
+// ================================================
 window.addEventListener('load',()=>{
-  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+  if('serviceWorker' in navigator)
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+
   initMap();
+
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(
-      pos=>{uLat=pos.coords.latitude;uLng=pos.coords.longitude;placeUser(uLat,uLng);map.setView([uLat,uLng],15,{animate:false});search(uLat,uLng);},
-      ()=>search(uLat,uLng),
-      {enableHighAccuracy:true,timeout:5000}
+      pos=>{
+        uLat=pos.coords.latitude;uLng=pos.coords.longitude;
+        placeUser(uLat,uLng);
+        map.setView([uLat,uLng],15,{animate:false});
+        fetchFacilities(uLat,uLng);
+      },
+      ()=>fetchFacilities(uLat,uLng),
+      {enableHighAccuracy:true,timeout:6000}
     );
-  }else{search(uLat,uLng);}
+  } else {
+    fetchFacilities(uLat,uLng);
+  }
 });
 </script>
 </body>
