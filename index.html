@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#4CAF7D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ナッピーナビ">
+<meta name="description" content="おむつ替え・授乳室・バリアフリートイレをナビ">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>ナッピーナビ</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --mint:#4CAF7D;--mint-d:#2E8B57;--mint-l:#E8F8F0;--mint-ll:#F0FAF5;
+  --peach:#FF8A65;--peach-l:#FFF0EB;
+  --sky:#64B5F6;--sky-l:#E8F4FE;
+  --lav:#CE93D8;--lav-l:#F8EEFF;
+  --rose:#F48FB1;--rose-l:#FEF0F5;
+  --text:#3D3D3D;--text2:#999;--bg:#FAFCFA;--bg2:#F2F7F4;
+  --card:#fff;--border:rgba(0,0,0,0.08);
+  --shadow:0 2px 12px rgba(76,175,125,0.12);
+  --r:16px;--rb:24px;
+  --sat:env(safe-area-inset-top,0px);
+  --sab:env(safe-area-inset-bottom,0px);
+  --hdr-h:68px;--search-h:58px;--filter-h:50px;
+  --top-h:176px;--sheet-peek:160px;
+}
+html,body{
+  height:100%;width:100%;overflow:hidden;
+  font-family:'Hiragino Maru Gothic Pro','Rounded Mplus 1c','Noto Sans JP',sans-serif;
+  background:var(--bg);color:var(--text);
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+#app{display:flex;flex-direction:column;height:100%;width:100%;position:relative;overflow:hidden;}
+
+/* ヘッダー */
+#hdr{
+  background:linear-gradient(135deg,#4CAF7D,#66BB8A);color:#fff;
+  padding:0 16px;
+  flex-shrink:0;height:var(--hdr-h);
+  box-shadow:0 2px 12px rgba(76,175,125,0.3);
+  display:flex;align-items:center;justify-content:space-between;z-index:100;
+}
+#hdr-left{display:flex;align-items:center;gap:10px;}
+#hdr-ico{width:42px;height:42px;border-radius:10px;overflow:hidden;flex-shrink:0;}
+#hdr-ico img{width:100%;height:100%;object-fit:cover;}
+#hdr-title{font-size:20px;font-weight:700;letter-spacing:.03em;}
+
+/* 検索バー */
+#srow{
+  display:flex;gap:7px;padding:9px 12px;
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  flex-shrink:0;height:var(--search-h);position:relative;z-index:200;
+}
+#swrap{flex:1;position:relative;}
+#sinput{
+  width:100%;height:38px;padding:0 34px 0 14px;
+  border-radius:19px;border:2px solid transparent;
+  font-size:13px;background:var(--card);color:var(--text);
+  outline:none;box-shadow:var(--shadow);
+}
+#sinput:focus{border-color:var(--mint);}
+#sinput::placeholder{color:#ccc;}
+#sclear{
+  display:none;position:absolute;right:10px;top:50%;
+  transform:translateY(-50%);background:none;border:none;
+  cursor:pointer;font-size:15px;color:#ccc;padding:4px;
+}
+#suggest{
+  display:none;position:absolute;top:44px;left:0;right:0;
+  background:var(--card);border:2px solid var(--mint-l);
+  border-radius:var(--r);z-index:9999;
+  box-shadow:0 8px 24px rgba(76,175,125,0.2);
+  overflow:hidden;max-height:220px;overflow-y:auto;
+}
+.sg{
+  padding:11px 14px;cursor:pointer;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.sg:last-child{border-bottom:none;}
+.sg:active{background:var(--mint-ll);}
+.sg-ico{font-size:18px;width:24px;text-align:center;}
+.sg-name{font-size:12px;font-weight:700;}
+.sg-addr{font-size:10px;color:var(--text2);margin-top:1px;}
+#lbtn{
+  width:38px;height:38px;border-radius:50%;
+  background:linear-gradient(135deg,#4CAF7D,#66BB8A);
+  border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;box-shadow:0 2px 8px rgba(76,175,125,0.4);
+}
+#lbtn svg{width:17px;height:17px;fill:#fff;}
+
+/* フィルター */
+#frow{
+  display:flex;gap:6px;padding:7px 12px;overflow-x:auto;
+  flex-shrink:0;height:var(--filter-h);
+  border-bottom:1px solid var(--border);background:var(--bg2);align-items:center;
+}
+#frow::-webkit-scrollbar{display:none;}
+.chip{
+  flex-shrink:0;padding:5px 12px;border-radius:14px;
+  font-size:11px;font-weight:600;cursor:pointer;
+  border:2px solid transparent;background:var(--card);color:var(--text2);
+  white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.08);transition:all .15s;
+}
+.chip.active{color:#fff;}
+.chip[data-f="all"].active{background:var(--mint);border-color:var(--mint);}
+.chip[data-f="diaper"].active{background:var(--peach);border-color:var(--peach);}
+.chip[data-f="nursing"].active{background:var(--lav);border-color:var(--lav);}
+.chip[data-f="barrier"].active{background:var(--sky);border-color:var(--sky);}
+.chip[data-f="ostomate"].active{background:var(--rose);border-color:var(--rose);}
+
+/* 地図エリア */
+#map-area{position:relative;flex:1;min-height:0;z-index:0;}
+#map{width:100%;height:100%;}
+
+/* ボトムシート */
+#sheet{
+  position:absolute;left:0;right:0;bottom:0;
+  height:calc(100% - var(--top-h));
+  background:var(--card);
+  border-radius:var(--rb) var(--rb) 0 0;
+  box-shadow:0 -4px 20px rgba(76,175,125,0.15);
+  z-index:300;display:flex;flex-direction:column;
+  transform:translateY(calc(100% - var(--sheet-peek)));
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+}
+#sheet.open{transform:translateY(0);}
+#sheet-handle{
+  flex-shrink:0;padding:10px 0 6px;cursor:grab;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  background:var(--card);border-radius:var(--rb) var(--rb) 0 0;
+}
+.handle-bar{width:40px;height:4px;background:var(--border);border-radius:2px;}
+#sheet-count{
+  font-size:11px;color:var(--text2);font-weight:600;
+  display:flex;align-items:center;justify-content:space-between;
+  width:100%;padding:0 14px;
+}
+#sheet-count-source{color:var(--mint);font-size:10px;}
+#flist{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.fi{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;
+}
+.fi:active{background:var(--mint-ll);}
+.fic{
+  width:44px;height:44px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-size:22px;box-shadow:0 2px 6px rgba(0,0,0,.08);
+}
+.fin{flex:1;min-width:0;}
+.finame{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fisub{font-size:10px;color:var(--text2);margin-top:2px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.fi-rating{font-size:10px;color:#F9A825;margin-top:2px;}
+.fidist{font-size:11px;font-weight:600;color:var(--mint-d);background:var(--mint-ll);padding:3px 7px;border-radius:10px;flex-shrink:0;}
+.fempty{padding:30px 20px;text-align:center;color:var(--text2);font-size:13px;line-height:2.2;}
+.badge-open{font-size:10px;background:#D1FAE5;color:#065F46;padding:1px 6px;border-radius:6px;font-weight:700;}
+.badge-unknown{font-size:10px;background:#F3F4F6;color:#9CA3AF;padding:1px 6px;border-radius:6px;}
+
+/* 施設詳細モーダル */
+#detail-modal{
+  position:absolute;left:0;right:0;bottom:0;
+  background:var(--card);border-radius:var(--rb) var(--rb) 0 0;
+  box-shadow:0 -8px 30px rgba(0,0,0,.15);
+  z-index:400;transform:translateY(100%);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+  max-height:75vh;display:flex;flex-direction:column;
+}
+#detail-modal.show{transform:translateY(0);}
+#modal-handle{
+  flex-shrink:0;padding:10px 14px 0;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-bar{width:40px;height:4px;background:var(--border);border-radius:2px;}
+#modal-close{
+  width:30px;height:30px;border-radius:50%;border:none;
+  background:var(--bg2);cursor:pointer;font-size:16px;color:var(--text2);
+  display:flex;align-items:center;justify-content:center;
+}
+#modal-body{
+  flex:1;overflow-y:auto;padding:10px 14px;
+  padding-bottom:calc(20px + var(--sab));
+  -webkit-overflow-scrolling:touch;
+}
+.det-head{
+  background:linear-gradient(135deg,var(--mint-ll),var(--bg2));
+  border-radius:var(--r);padding:12px;margin-bottom:10px;border:1px solid var(--mint-l);
+}
+.dn{font-size:16px;font-weight:700;margin-bottom:2px;}
+.da{font-size:11px;color:var(--text2);}
+.d-rating{font-size:11px;color:#F9A825;margin-top:3px;}
+.dtags{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0;}
+.tag{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.t-diaper{background:var(--peach-l);color:#BF360C;}
+.t-barrier{background:var(--sky-l);color:#0D47A1;}
+.t-nursing{background:var(--lav-l);color:#4A148C;}
+.t-ostomate{background:var(--rose-l);color:#880E4F;}
+.drow{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:12px;color:var(--text2);}
+.drow span:last-child{color:var(--text);margin-left:auto;font-size:12px;font-weight:600;}
+.dfeats{margin-top:8px;background:var(--mint-ll);border-radius:12px;padding:10px 12px;font-size:11px;color:var(--mint-d);line-height:1.9;}
+.dconf{display:inline-block;padding:3px 8px;border-radius:8px;font-size:10px;font-weight:700;margin-top:6px;}
+.c-high{background:#D1FAE5;color:#065F46;}
+.c-mid{background:#FEF9C3;color:#854D0E;}
+.c-low{background:#FEE2E2;color:#991B1B;}
+.dsrc{font-size:10px;color:var(--text2);margin-top:7px;text-align:right;}
+.nbtn{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  width:100%;margin-top:12px;padding:13px;border-radius:var(--rb);
+  background:linear-gradient(135deg,#4CAF7D,#66BB8A);
+  color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer;
+  box-shadow:0 3px 12px rgba(76,175,125,0.35);
+}
+.nbtn:active{opacity:.85;}
+
+/* ローディング */
+#loading{
+  position:absolute;inset:0;background:rgba(240,250,245,.95);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;z-index:500;
+}
+.load-ico{animation:bounce 1s ease infinite alternate;}
+@keyframes bounce{0%{transform:translateY(0);}100%{transform:translateY(-10px);}}
+.spinner{width:48px;height:48px;border:4px solid var(--mint-l);border-top-color:var(--mint);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.ldt{font-size:14px;color:var(--mint-d);font-weight:700;}
+.lds{font-size:11px;color:var(--text2);}
+
+/* オフライン */
+#offbar{display:none;position:absolute;top:0;left:0;right:0;background:#FF7043;color:#fff;font-size:12px;text-align:center;padding:6px;z-index:999;}
+#offbar.show{display:block;}
+
+/* インストール */
+#insbar{display:none;position:absolute;bottom:0;left:0;right:0;background:linear-gradient(135deg,#4CAF7D,#66BB8A);color:#fff;padding:12px 16px;z-index:600;flex-direction:column;gap:8px;border-radius:var(--rb) var(--rb) 0 0;}
+#insbar.show{display:flex;}
+#insbar p{font-size:13px;font-weight:700;}
+#insbar small{font-size:10px;opacity:.85;}
+.irow{display:flex;gap:8px;}
+#ibtn{flex:1;padding:9px;border-radius:20px;background:#fff;color:var(--mint-d);border:none;font-size:13px;font-weight:700;cursor:pointer;}
+#ino{padding:9px 14px;border-radius:20px;background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5);font-size:12px;cursor:pointer;}
+
+/* PC向け */
+@media(min-width:768px){
+  :root{--sheet-peek:200px;}
+  #app{max-width:480px;margin:0 auto;box-shadow:0 0 40px rgba(0,0,0,.15);}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hdr">
+    <div id="hdr-left">
+      <div id="hdr-ico"><img src="icons/icon-192.png" alt="ナッピーナビ"></div>
+      <div id="hdr-title">ナッピーナビ</div>
+    </div>
+  </div>
+  <div id="srow">
+    <div id="swrap">
+      <input id="sinput" type="search" placeholder="🔍 住所・駅名・エリアで検索..." autocomplete="off">
+      <button id="sclear" onclick="clearSearch()">✕</button>
+      <div id="suggest"></div>
+    </div>
+    <button id="lbtn" aria-label="現在地">
+      <svg viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+    </button>
+  </div>
+  <div id="frow">
+    <div class="chip active" data-f="all">🗺 すべて</div>
+    <div class="chip" data-f="diaper">🍼 おむつ替え</div>
+    <div class="chip" data-f="nursing">🤱 授乳室</div>
+    <div class="chip" data-f="barrier">♿ バリアフリー</div>
+    <div class="chip" data-f="ostomate">🏥 オストメイト</div>
+  </div>
+  <div id="map-area">
+    <div id="map"></div>
+    <div id="loading">
+      <div class="load-ico"><img src="icons/icon-192.png" style="width:60px;height:60px;border-radius:14px;"></div>
+      <div class="spinner"></div>
+      <div class="ldt">周辺施設を検索中...</div>
+      <div class="lds">Google Maps + AI解析でデータを取得しています</div>
+    </div>
+    <div id="offbar">📡 オフラインです</div>
+    <div id="sheet">
+      <div id="sheet-handle">
+        <div class="handle-bar"></div>
+        <div id="sheet-count">
+          <span id="sheet-count-label">付近の施設</span>
+          <span id="sheet-count-source"></span>
+        </div>
+      </div>
+      <div id="flist"></div>
+    </div>
+    <div id="detail-modal">
+      <div id="modal-handle">
+        <div class="modal-bar"></div>
+        <button id="modal-close" onclick="closeDetail()">✕</button>
+      </div>
+      <div id="modal-body">
+        <div class="det-head">
+          <div class="dn" id="dn"></div>
+          <div class="da" id="da"></div>
+          <div class="d-rating" id="d-rating"></div>
+        </div>
+        <div class="dtags" id="dtags"></div>
+        <div class="drow"><span>🕐</span><span>営業状況</span><span id="dhours"></span></div>
+        <div class="drow"><span>📍</span><span>現在地から</span><span id="ddist"></span></div>
+        <div class="drow"><span>♿</span><span>アクセス</span><span id="daccess"></span></div>
+        <div class="dfeats" id="dfeats" style="display:none"></div>
+        <div class="dsrc" id="dsrc"></div>
+        <button class="nbtn" id="nbtn">🗺 Google マップでナビ</button>
+      </div>
+    </div>
+    <div id="insbar">
+      <p>📲 ホーム画面に追加できます</p>
+      <small>オフラインでも使えるアプリとして保存できます</small>
+      <div class="irow"><button id="ibtn">インストール</button><button id="ino">後で</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================================================
+// 設定
+// ================================================
+const API_BASE = 'https://babymap-api.vercel.app';
+const GMAP_KEY = 'AIzaSyCqM8h9zwC_4SWlSkXTB1yloweM-EhttS0';
+
+// ================================================
+// アイコン定義
+// ================================================
+function getIcon(tags){
+  const d=tags.includes('diaper'),n=tags.includes('nursing'),
+        b=tags.includes('barrier'),o=tags.includes('ostomate');
+  if(d&&n)return{em:'🍼',bg:'#FF8A65',color:'#FF8A65'};
+  if(d)   return{em:'🍼',bg:'#FFA07A',color:'#FFA07A'};
+  if(n)   return{em:'🤱',bg:'#CE93D8',color:'#CE93D8'};
+  if(o)   return{em:'🏥',bg:'#F48FB1',color:'#F48FB1'};
+  if(b)   return{em:'♿',bg:'#64B5F6',color:'#64B5F6'};
+  return       {em:'🏢',bg:'#A5D6A7',color:'#A5D6A7'};
+}
+function getTypeIco(types=[]){
+  if(types.some(t=>['shopping_mall','department_store'].includes(t)))return'🏬';
+  if(types.some(t=>['train_station','subway_station'].includes(t)))return'🚃';
+  if(types.some(t=>['hospital'].includes(t)))return'🏥';
+  if(types.some(t=>['park'].includes(t)))return'🌳';
+  return'🏢';
+}
+
+// ================================================
+// 定数・状態
+// ================================================
+const TAGMAP={
+  diaper: ['🍼 おむつ替え','t-diaper'],
+  barrier:['♿ バリアフリー','t-barrier'],
+  nursing:['🤱 授乳室','t-nursing'],
+  ostomate:['🏥 オストメイト','t-ostomate'],
+};
+const DEFAULT_LAT=35.6762,DEFAULT_LNG=139.6503;
+let gmap,uMarker;
+let uLat=DEFAULT_LAT,uLng=DEFAULT_LNG;
+let facs=[],markers=[],selId=null,curF='all';
+let moveTimer=null,lastPos=null,geoTimer=null;
+let deferredPrompt=null,sheetOpen=false;
+
+// ================================================
+// Google Maps 初期化
+// ================================================
+function initMap(){
+  gmap = new google.maps.Map(document.getElementById('map'),{
+    center:{lat:uLat,lng:uLng},
+    zoom:15,
+    mapTypeId:'roadmap',
+    disableDefaultUI:false,
+    zoomControl:true,
+    mapTypeControl:false,
+    streetViewControl:false,
+    fullscreenControl:false,
+    gestureHandling:'greedy',
+    language:'ja',
+    // 標準POIアイコンを非表示（飲食店・ショッピング等）
+    styles:[
+      {featureType:'poi',elementType:'labels.icon',stylers:[{visibility:'off'}]},
+      {featureType:'poi.attraction',elementType:'labels',stylers:[{visibility:'off'}]},
+      {featureType:'poi.business',elementType:'labels',stylers:[{visibility:'off'}]},
+      {featureType:'poi.government',elementType:'labels.icon',stylers:[{visibility:'off'}]},
+      {featureType:'poi.medical',elementType:'labels.icon',stylers:[{visibility:'off'}]},
+      {featureType:'poi.place_of_worship',elementType:'labels',stylers:[{visibility:'off'}]},
+      {featureType:'poi.school',elementType:'labels.icon',stylers:[{visibility:'off'}]},
+      {featureType:'poi.sports_complex',elementType:'labels',stylers:[{visibility:'off'}]},
+      {featureType:'poi.park',elementType:'labels.icon',stylers:[{visibility:'off'}]},
+    ],
+  });
+
+  // 現在地マーカー
+  placeUser(uLat,uLng);
+
+  // 地図移動後に施設を再検索
+  gmap.addListener('idle',()=>{
+    const c=gmap.getCenter();
+    clearTimeout(moveTimer);
+    moveTimer=setTimeout(()=>fetchFacilities(c.lat(),c.lng()),700);
+  });
+
+  // 地図クリックでシート・詳細を閉じる
+  gmap.addListener('click',()=>{
+    closeDetail();
+    collapseSheet();
+  });
+}
+
+function placeUser(lat,lng){
+  if(uMarker){
+    uMarker.setPosition({lat,lng});
+    return;
+  }
+  // カスタム現在地マーカー
+  uMarker = new google.maps.Marker({
+    position:{lat,lng},
+    map:gmap,
+    title:'現在地',
+    icon:{
+      path:google.maps.SymbolPath.CIRCLE,
+      scale:10,
+      fillColor:'#4CAF7D',
+      fillOpacity:1,
+      strokeColor:'#fff',
+      strokeWeight:3,
+    },
+    zIndex:1000,
+  });
+}
+
+function createMarker(f){
+  const ico=getIcon(f.tags);
+  // 絵文字マーカー（SVGベース）
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44">
+    <circle cx="22" cy="22" r="19" fill="${ico.color}" stroke="white" stroke-width="3"/>
+    <text x="22" y="29" font-size="18" text-anchor="middle">${ico.em}</text>
+  </svg>`;
+  const m=new google.maps.Marker({
+    position:{lat:f.lat,lng:f.lng},
+    map:gmap,
+    title:f.name,
+    icon:{
+      url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),
+      scaledSize:new google.maps.Size(44,44),
+      anchor:new google.maps.Point(22,22),
+    },
+    zIndex:100,
+  });
+  m.addListener('click',()=>{
+    openDetail(f.id);
+    expandSheet();
+  });
+  return m;
+}
+
+function createSelectedMarker(f){
+  const ico=getIcon(f.tags);
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="54" height="54">
+    <circle cx="27" cy="27" r="24" fill="${ico.color}" stroke="white" stroke-width="3" opacity="0.3"/>
+    <circle cx="27" cy="27" r="19" fill="${ico.color}" stroke="white" stroke-width="3"/>
+    <text x="27" y="34" font-size="20" text-anchor="middle">${ico.em}</text>
+  </svg>`;
+  return {
+    url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),
+    scaledSize:new google.maps.Size(54,54),
+    anchor:new google.maps.Point(27,27),
+  };
+}
+
+// ================================================
+// ボトムシート制御
+// ================================================
+function expandSheet(){
+  document.getElementById('sheet').classList.add('open');
+  sheetOpen=true;
+}
+function collapseSheet(){
+  document.getElementById('sheet').classList.remove('open');
+  sheetOpen=false;
+}
+let dragStart=null;
+const handle=document.getElementById('sheet-handle');
+handle.addEventListener('touchstart',e=>{dragStart=e.touches[0].clientY;},{passive:true});
+handle.addEventListener('touchend',e=>{
+  if(dragStart===null)return;
+  const dy=dragStart-e.changedTouches[0].clientY;
+  if(dy>30)expandSheet();
+  else if(dy<-30)collapseSheet();
+  dragStart=null;
+},{passive:true});
+handle.addEventListener('click',()=>sheetOpen?collapseSheet():expandSheet());
+
+// ================================================
+// 施設詳細モーダル
+// ================================================
+function openDetail(id){
+  selId=id;
+  const f=facs.find(x=>x.id===id);
+  if(!f)return;
+
+  // 選択マーカーを強調
+  markers.forEach(({id:mid,marker})=>{
+    if(mid===id) marker.setIcon(createSelectedMarker(f));
+    else{
+      const fi=facs.find(x=>x.id===mid);
+      if(fi){const ico=getIcon(fi.tags);const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44"><circle cx="22" cy="22" r="19" fill="${ico.color}" stroke="white" stroke-width="3"/><text x="22" y="29" font-size="18" text-anchor="middle">${ico.em}</text></svg>`;marker.setIcon({url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(44,44),anchor:new google.maps.Point(22,22)});}
+    }
+  });
+
+  gmap.panTo({lat:f.lat,lng:f.lng});
+
+  const ico=getIcon(f.tags);
+  const typeIco=getTypeIco(f.types);
+  document.getElementById('dn').innerHTML=`${ico.em} ${esc(f.name)}`;
+  document.getElementById('da').textContent=f.addr||'住所情報なし';
+  document.getElementById('d-rating').textContent=f.rating?`⭐ ${f.rating}（${f.ratingCount}件のクチコミ）`:'';
+  document.getElementById('dhours').textContent=f.hours;
+  document.getElementById('ddist').textContent=fmtd(uLat,uLng,f.lat,f.lng);
+  document.getElementById('daccess').textContent=f.access;
+  document.getElementById('dtags').innerHTML=f.tags.map(t=>{
+    const[l,c]=TAGMAP[t]||[t,''];
+    return`<span class="tag ${c}">${l}</span>`;
+  }).join('');
+  const featsEl=document.getElementById('dfeats');
+  if(f.feats?.length){
+    const cc={high:'c-high',mid:'c-mid',low:'c-low'}[f.confidence]||'c-low';
+    const cl={high:'高確度',mid:'中確度',low:'要確認'}[f.confidence]||'';
+    featsEl.innerHTML=f.feats.join('<br>')+`<br><span class="dconf ${cc}">AI判定: ${cl}</span>`;
+    featsEl.style.display='block';
+  }else{featsEl.style.display='none';}
+  document.getElementById('dsrc').textContent=`データ: ${f.source}`;
+  document.getElementById('detail-modal').classList.add('show');
+}
+
+window.closeDetail=function(){
+  document.getElementById('detail-modal').classList.remove('show');
+  selId=null;
+};
+
+document.getElementById('nbtn').onclick=()=>{
+  const f=facs.find(x=>x.id===selId);
+  if(!f)return;
+  const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if(isMobile){
+    window.open(`https://maps.google.com/maps?daddr=${f.lat},${f.lng}&directionsmode=driving`,'_blank');
+  }else{
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${f.lat},${f.lng}&destination_place_id=${f.id}&travelmode=driving&hl=ja`,'_blank');
+  }
+};
+
+// ================================================
+// Google Places API（Vercel経由）
+// ================================================
+async function fetchFacilities(lat,lng){
+  const posKey=`${lat.toFixed(3)},${lng.toFixed(3)}`;
+  if(posKey===lastPos)return;
+  lastPos=posKey;
+  setLoad(true,'施設データを取得中...');
+  document.getElementById('sheet-count-source').textContent='取得中...';
+  try{
+    const r=await fetch(`${API_BASE}/api/places?lat=${lat}&lng=${lng}&radius=2000`,
+      {signal:AbortSignal.timeout(20000)});
+    if(!r.ok)throw new Error(`API ${r.status}`);
+    const json=await r.json();
+    const places=json.results||[];
+    const details=await Promise.allSettled(
+      places.slice(0,15).map(p=>fetchDetail(p))
+    );
+    facs=details.filter(d=>d.status==='fulfilled'&&d.value).map(d=>d.value);
+    document.getElementById('sheet-count-source').textContent=`Google Places（${facs.length}件）`;
+  }catch(e){
+    console.warn('API error:',e.message);
+    document.getElementById('sheet-count-source').textContent='取得失敗';
+    facs=[];
+  }
+  renderMarkers();renderList();setLoad(false);
+}
+
+async function fetchDetail(place){
+  try{
+    const r=await fetch(`${API_BASE}/api/detail?place_id=${place.place_id}`,
+      {signal:AbortSignal.timeout(10000)});
+    if(!r.ok)return null;
+    const json=await r.json();
+    const p=json.result;
+    const bi=json.babyInfo||{tags:['barrier'],feats:[],confidence:'low'};
+    return{
+      id:p.place_id,name:p.name,addr:p.vicinity||'',
+      types:p.types||[],tags:bi.tags,feats:bi.feats,
+      lat:p.geometry.location.lat,lng:p.geometry.location.lng,
+      hours:p.opening_hours?.open_now===true?'現在営業中':
+            p.opening_hours?.open_now===false?'現在閉店中':'情報なし',
+      rating:p.rating||null,ratingCount:p.user_ratings_total||0,
+      access:p.wheelchair_accessible_entrance?'バリアフリー入口あり':'詳細不明',
+      confidence:bi.confidence||'low',source:'Google Places API',
+    };
+  }catch(e){return null;}
+}
+
+// ================================================
+// マーカー描画
+// ================================================
+function renderMarkers(){
+  // 既存マーカーを削除
+  markers.forEach(({marker})=>marker.setMap(null));
+  markers=[];
+
+  const vis=facs.filter(f=>
+    (curF==='all'||f.tags.includes(curF))&&
+    f.hours!=='現在閉店中'
+  );
+  vis.forEach(f=>{
+    const m=createMarker(f);
+    markers.push({id:f.id,marker:m});
+  });
+}
+
+// ================================================
+// リスト描画
+// ================================================
+function renderList(){
+  let items=facs;
+  if(curF!=='all')items=items.filter(f=>f.tags.includes(curF));
+  items=items.filter(f=>f.hours!=='現在閉店中');
+  items.sort((a,b)=>{
+    const aO=a.hours==='現在営業中'?0:1;
+    const bO=b.hours==='現在営業中'?0:1;
+    if(aO!==bO)return aO-bO;
+    return gdist(uLat,uLng,a.lat,a.lng)-gdist(uLat,uLng,b.lat,b.lng);
+  });
+
+  document.getElementById('sheet-count-label').textContent=`付近の施設（${items.length}件）`;
+
+  if(!items.length){
+    document.getElementById('flist').innerHTML=
+      `<div class="fempty">🔍 この周辺のデータを取得中です。<br>しばらくお待ちいただくか<br>地図を動かして再検索してください！</div>`;
+    return;
+  }
+
+  document.getElementById('flist').innerHTML=items.map(f=>{
+    const ico=getIcon(f.tags);
+    const typeIco=getTypeIco(f.types);
+    const d=fmtd(uLat,uLng,f.lat,f.lng);
+    const rating=f.rating?`⭐${f.rating}（${f.ratingCount}件）`:'';
+    const badge=f.hours==='現在営業中'
+      ?`<span class="badge-open">🟢 営業中</span>`
+      :`<span class="badge-unknown">時間不明</span>`;
+    return`<div class="fi" onclick="openDetail('${f.id}');expandSheet();">
+      <div class="fic" style="background:${ico.bg}22;">${ico.em}</div>
+      <div class="fin">
+        <div class="finame">${typeIco} ${esc(f.name)}</div>
+        <div class="fisub">${f.tags.map(t=>TAGMAP[t]?.[0]||'').join(' · ')} ${badge}</div>
+        ${rating?`<div class="fi-rating">${rating}</div>`:''}
+      </div>
+      <div class="fidist">${d}</div>
+    </div>`;
+  }).join('');
+}
+
+// ================================================
+// 住所検索（Nominatim）
+// ================================================
+const suggestEl=document.getElementById('suggest');
+document.getElementById('sinput').addEventListener('input',e=>{
+  const q=e.target.value.trim();
+  document.getElementById('sclear').style.display=q?'block':'none';
+  clearTimeout(geoTimer);
+  if(!q){suggestEl.style.display='none';return;}
+  geoTimer=setTimeout(()=>fetchSuggest(q),350);
+});
+document.getElementById('sinput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){e.preventDefault();geocode(document.getElementById('sinput').value.trim());}
+});
+
+async function fetchSuggest(q){
+  try{
+    const r=await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6&countrycodes=jp&accept-language=ja`,
+      {headers:{'Accept-Language':'ja'}});
+    const items=await r.json();
+    if(!items.length){suggestEl.style.display='none';return;}
+    suggestEl.innerHTML=items.map(item=>{
+      const parts=item.display_name.split(',');
+      const name=parts[0].trim(),addr=parts.slice(1,3).join(',').trim();
+      const ico=geoIco(item.type,item.class);
+      return`<div class="sg" onclick="moveToGeo(${item.lat},${item.lon},'${esc(name)}')">
+        <span class="sg-ico">${ico}</span>
+        <div><div class="sg-name">${esc(name)}</div><div class="sg-addr">${esc(addr)}</div></div>
+      </div>`;
+    }).join('');
+    suggestEl.style.display='block';
+  }catch(e){suggestEl.style.display='none';}
+}
+
+async function geocode(q){
+  if(!q)return;
+  setLoad(true,`「${q}」を検索中...`);
+  suggestEl.style.display='none';
+  try{
+    const r=await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=jp&accept-language=ja`,
+      {headers:{'Accept-Language':'ja'}});
+    const items=await r.json();
+    if(items.length)moveToGeo(items[0].lat,items[0].lon,items[0].display_name.split(',')[0]);
+    else{setLoad(false);alert(`「${q}」が見つかりませんでした。`);}
+  }catch(e){setLoad(false);alert('検索に失敗しました。');}
+}
+
+window.moveToGeo=function(lat,lng,name){
+  suggestEl.style.display='none';
+  document.getElementById('sinput').value=name;
+  document.getElementById('sclear').style.display='block';
+  uLat=parseFloat(lat);uLng=parseFloat(lng);
+  placeUser(uLat,uLng);
+  lastPos=null;
+  gmap.panTo({lat:uLat,lng:uLng});
+  setLoad(false);
+};
+
+window.clearSearch=function(){
+  document.getElementById('sinput').value='';
+  document.getElementById('sclear').style.display='none';
+  suggestEl.style.display='none';
+};
+
+function geoIco(type,cls){
+  if(cls==='railway'||type==='station')return'🚃';
+  if(type==='hospital')return'🏥';
+  if(cls==='leisure')return'🌳';
+  if(cls==='shop')return'🏪';
+  if(['city','town','village','suburb'].includes(type))return'🏘';
+  return'📍';
+}
+document.addEventListener('click',e=>{
+  if(!document.getElementById('swrap').contains(e.target))
+    suggestEl.style.display='none';
+});
+
+// ================================================
+// 現在地ボタン
+// ================================================
+document.getElementById('lbtn').addEventListener('click',()=>{
+  if(!navigator.geolocation){alert('位置情報がサポートされていません');return;}
+  setLoad(true,'📍 現在地を取得中...');
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      uLat=pos.coords.latitude;uLng=pos.coords.longitude;
+      placeUser(uLat,uLng);
+      gmap.panTo({lat:uLat,lng:uLng});
+      gmap.setZoom(15);
+      clearSearch();lastPos=null;
+      fetchFacilities(uLat,uLng);
+    },
+    err=>{setLoad(false);alert(`位置情報エラー: ${err.message}`);},
+    {enableHighAccuracy:true,timeout:10000}
+  );
+});
+
+// フィルター
+document.querySelectorAll('.chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active');curF=c.dataset.f;
+    renderMarkers();renderList();closeDetail();
+  });
+});
+
+// ================================================
+// ユーティリティ
+// ================================================
+function gdist(a,b,c,d){
+  const R=6371000,dA=(c-a)*Math.PI/180,dB=(d-b)*Math.PI/180;
+  const e=Math.sin(dA/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dB/2)**2;
+  return R*2*Math.atan2(Math.sqrt(e),Math.sqrt(1-e));
+}
+function fmtd(a,b,c,d){const m=gdist(a,b,c,d);return m<1000?`${Math.round(m)}m`:`${(m/1000).toFixed(1)}km`;}
+function setLoad(s,msg=''){
+  const el=document.getElementById('loading');
+  el.style.display=s?'flex':'none';
+  if(msg)el.querySelector('.ldt').textContent=msg;
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ================================================
+// オフライン・PWA
+// ================================================
+window.addEventListener('online',()=>document.getElementById('offbar').classList.remove('show'));
+window.addEventListener('offline',()=>document.getElementById('offbar').classList.add('show'));
+if(!navigator.onLine)document.getElementById('offbar').classList.add('show');
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  document.getElementById('insbar').classList.add('show');
+});
+document.getElementById('ibtn').onclick=async()=>{
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();await deferredPrompt.userChoice;
+  deferredPrompt=null;document.getElementById('insbar').classList.remove('show');
+};
+document.getElementById('ino').onclick=()=>document.getElementById('insbar').classList.remove('show');
+
+// ================================================
+// 起動（Google Maps APIロード後に呼ばれる）
+// ================================================
+window.initGoogleMap=function(){
+  initMap();
+  if('serviceWorker' in navigator)
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      pos=>{
+        uLat=pos.coords.latitude;uLng=pos.coords.longitude;
+        gmap.setCenter({lat:uLat,lng:uLng});
+        placeUser(uLat,uLng);
+        fetchFacilities(uLat,uLng);
+      },
+      ()=>fetchFacilities(uLat,uLng),
+      {enableHighAccuracy:true,timeout:6000}
+    );
+  }else{fetchFacilities(uLat,uLng);}
+};
+</script>
+
+<!-- Google Maps JavaScript API（高画質地図）-->
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqM8h9zwC_4SWlSkXTB1yloweM-EhttS0&language=ja&region=JP&callback=initGoogleMap">
+</script>
+</body>
+</html>
